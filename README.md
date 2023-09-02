@@ -31,7 +31,7 @@ Chainlink VRF offers several benefits for smart contract developers and users wh
 - It leverages the security and reliability of the Chainlink network, which consists of hundreds of independent node operators who are incentivized to provide high-quality data and services.
 - It supports multiple blockchain platforms and networks, such as Ethereum, Polygon, Binance Smart Chain, Avalanche, Fantom, and more.
 
-## VRF Experimentation
+## Chainlink VRF Experimentation
 
 To use Chainlink VRF inside a smart contract we first need to fund the LINK tokens needed to carry out this processing.
 There are two methods for requesting randomness with Chainlink VRF v2:
@@ -43,7 +43,7 @@ Direct funding method doesn't require a subscription and is optimal for one-off 
 
 Unlike the subscription method, the direct funding method does not require you to create subscriptions and pre-fund them. Instead, you must directly fund consuming contracts with LINK tokens before they request randomness. Because the consuming contract directly pays the LINK for the request, the cost is calculated during the request and not during the callback when the randomness is fulfilled. If you need help estimating the costs, check [this documentation page.](https://docs.chain.link/vrf/v2/estimating-costs)
 
-### Setting up the smart contract
+### Setting up the smart contract to call Chainlink VRF
 
 To set up your consuming contract, you must take care of these steps:
 
@@ -186,7 +186,7 @@ contract VRFv2DirectFundingConsumer is
 }
 ```
 
-For this contract to work, we're going make sure that the consuming contract has enough LINK.
+For this contract to work, we're going to make sure that the consuming contract has enough LINK.
 To do so, complete these two steps: 
 
 1: Acquire [testnet LINK](https://docs.chain.link/resources/acquire-link);
@@ -217,7 +217,7 @@ To complete these steps using Remix, you can follow [this tutorial](https://docs
 
 ## Chainlink Automations
 
-Chainlink Automations is a service that enables smart contract developers to automate their contract functions in a decentralized manner. It uses a network of Chainlink nodes that monitor the contract state and trigger transactions when certain conditions are met. For example, a smart contract could use Chainlink Automations to automatically rebalance its portfolio, distribute rewards, or execute trades. Chainlink Automations saves developers time and resources, and provides reliable and scalable automation for their dApps.
+Chainlink Automations, formerly known as Keepers, is a service that enables smart contract developers to automate their contract functions in a decentralized manner. It uses a network of Chainlink nodes that monitor the contract state and trigger transactions when certain conditions are met. For example, a smart contract could use Chainlink Automations to automatically rebalance its portfolio, distribute rewards, or execute trades. Chainlink Automations saves developers time and resources, and provides reliable and scalable automation for their dApps.
 
 You can learn more about Chainlink Automations from the [official website](https://chain.link/automation).
 
@@ -225,11 +225,13 @@ You can learn more about Chainlink Automations from the [official website](https
 
 Chainlink Automations works by allowing a smart contract to register an upkeep with the Chainlink Automation Registry contract. An upkeep is a job or task that the smart contract wants to execute periodically or conditionally. The upkeep can be based on time (e.g., every hour) or custom logic (e.g., when the price of an asset reaches a certain level). The smart contract also needs to provide some payment in LINK tokens to fund the upkeep.
 
-The Chainlink Automation Registry assigns the upkeep to one or more Chainlink nodes that have registered as Automation Nodes. These nodes are the same ones that provide data feeds and verifiable randomness for other Chainlink services. The nodes use a turn-taking algorithm to service the upkeeps in a fair and random manner.
+- The Chainlink Automation Registry assigns the upkeep to one or more Chainlink nodes that have registered as Automation Nodes. These nodes are the same ones that provide data feeds and verifiable randomness for other Chainlink services. The nodes use a turn-taking algorithm to service the upkeeps in a fair and random manner.
 
-The assigned Chainlink nodes monitor the smart contract state and evaluate the upkeep logic off-chain, using a local simulation of the blockchain. This reduces the gas costs and latency of the automation process. When the nodes detect that the upkeep condition is met, they initiate an on-chain transaction to execute the smart contract function.
+- The assigned Chainlink nodes monitor the smart contract state and evaluate the upkeep logic off-chain, using a local simulation of the blockchain. This reduces the gas costs and latency of the automation process. When the nodes detect that the upkeep condition is met, they initiate an on-chain transaction to execute the smart contract function.
 
-The smart contract verifies that the transaction is coming from an authorized Chainlink node and that the upkeep logic is satisfied. If the verification passes, the smart contract accepts the transaction and performs the function. If the verification fails, the smart contract rejects the transaction and can request a new one.
+- The smart contract verifies that the transaction is coming from an authorized Chainlink node and that the upkeep logic is satisfied. If the verification passes, the smart contract accepts the transaction and performs the function. If the verification fails, the smart contract rejects the transaction and can request a new one.
+
+![image](https://github.com/MatheusDaros/chainlink-intro/assets/17483282/564d12f1-2d9c-4f15-8fd4-77cf2d5a5021)
 
 ## Benefits of Chainlink Automations
 
@@ -240,6 +242,101 @@ Chainlink Automations offers several benefits for smart contract developers and 
 - It leverages the security and reliability of the Chainlink network, which consists of hundreds of independent node operators who are incentivized to provide high-quality data and services.
 - It supports multiple blockchain platforms and networks, such as Ethereum, Polygon, Binance Smart Chain, Avalanche, Fantom, and more.
 
+## Chainlink Automations Experimentation
+
+There are two possible ways that Chainlink Automation will check when to execute smart contract functions:
+
+- [Time-based trigger](https://docs.chain.link/chainlink-automation/job-scheduler): Use a time-based trigger to execute your function according to a time schedule. This feature is also called the Job Scheduler and it is a throwback to the Ethereum Alarm Clock. Time-based trigger contracts do not need to be compatible with the `AutomationCompatibleInterface` contract.
+
+- [Custom logic trigger](https://docs.chain.link/chainlink-automation/register-upkeep): Use a custom logic trigger to provide custom solidity logic that Automation Nodes evaluate (off-chain) to determine when to execute your function on-chain. Your contract must meet the requirements to be compatible with the `AutomationCompatibleInterface` contract. Custom logic examples include checking the balance on a contract, only executing limit orders when their levels are met, any one of our coded examples, and many more.
+
+### Setting up the smart contract to use Chainlink Automations
+
+To use Chainlink Automation, contracts must meet the following requirements:
+
+- Import `AutomationCompatible.sol`;
+- Use the `AutomationCompatibleInterface` from the library to ensure your `checkUpkeep` and `performUpkeep` function definitions match the definitions expected by the Chainlink Automation Network.
+- Include a `checkUpkeep` function that contains the logic that will be executed off-chain to see if `performUpkeep` should be executed. `checkUpkeep` can use on-chain data and a specified `checkData` parameter to perform complex calculations off-chain and then send the result to `performUpkeep` as `performData`;
+- Include a `performUpkeep` function that will be executed on-chain when `checkUpkeep` returns true.
+
+After you deploy your contract, you'll need to setup the automation process in the [Automation UI](https://automation.chain.link/).
+
+To test this process we're using this smart contract:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+// AutomationCompatible.sol imports the functions from both ./AutomationBase.sol and
+// ./interfaces/AutomationCompatibleInterface.sol
+import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
+ * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+contract Counter is AutomationCompatibleInterface {
+    /**
+     * Public counter variable
+     */
+    uint public counter;
+
+    /**
+     * Use an interval in seconds and a timestamp to slow execution of Upkeep
+     */
+    uint public immutable interval;
+    uint public lastTimeStamp;
+
+    constructor(uint updateInterval) {
+        interval = updateInterval;
+        lastTimeStamp = block.timestamp;
+
+        counter = 0;
+    }
+
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory /* performData */)
+    {
+        upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+        // We don't use the checkData in this example. The checkData is defined when the Upkeep was registered.
+    }
+
+    function performUpkeep(bytes calldata /* performData */) external override {
+        //We highly recommend revalidating the upkeep in the performUpkeep function
+        if ((block.timestamp - lastTimeStamp) > interval) {
+            lastTimeStamp = block.timestamp;
+            counter = counter + 1;
+        }
+        // We don't use the performData in this example. The performData is generated by the Automation Node's call to your checkUpkeep function
+    }
+}
+
+```
+
+For this contract to work, we're going to register it in the Automation UI
+
+- Connect your wallet
+- Register new Upkeep
+- Custom logic
+- Pase address
+- Input link amount
+- Deploy Upkeep
+- Fund Upkeep (if underfunded)
+
+After you set up this Upkeep, you can view the Upkeep details at the Automation UI and also by calling the smart contract functions:
+
+- `counter` to view the amount of times that the function was called;
+- `lastTimeStamp` to view the timestamp of the last time that the contract was updated by the automation.
+
+To complete these steps using Remix, you can follow [this tutorial](https://docs.chain.link/chainlink-automation/compatible-contracts#example-contract)
+
 ## Learn more about Chainlink Automations
 
 (1) Introduction to Chainlink Automation | Chainlink Documentation: <https://docs.chain.link/chainlink-automation/introduction/>
@@ -247,3 +344,5 @@ Chainlink Automations offers several benefits for smart contract developers and 
 (2) Chainlink Automation Architecture | Chainlink Documentation: <https://docs.chain.link/chainlink-automation/overview/>
 
 (3) Reliable, high-performance smart contract automation: <https://chain.link/automation>
+
+(4) Chainlink Automation Best Practices: <https://docs.chain.link/chainlink-automation/compatible-contract-best-practice>
