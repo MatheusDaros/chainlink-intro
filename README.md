@@ -231,7 +231,7 @@ Chainlink Automations works by allowing a smart contract to register an upkeep w
 
 - The smart contract verifies that the transaction is coming from an authorized Chainlink node and that the upkeep logic is satisfied. If the verification passes, the smart contract accepts the transaction and performs the function. If the verification fails, the smart contract rejects the transaction and can request a new one.
 
-![image](https://github.com/MatheusDaros/chainlink-intro/assets/17483282/564d12f1-2d9c-4f15-8fd4-77cf2d5a5021)
+![Chainlink Automation Animation](https://i.imgur.com/yqiy4mP.gif)
 
 ## Benefits of Chainlink Automations
 
